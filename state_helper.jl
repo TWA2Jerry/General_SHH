@@ -71,11 +71,11 @@ function give_model(model::UnremovableABM{ContinuousSpace{2, true, Float64, type
        #figure, ax, colourbarthing = Makie.scatter(b_positions,axis = (;   limits = (fig_box[1][1], fig_box[2][1], fig_box[1][2], fig_box[2][2]), aspect = 1), marker = '→',  markersize = marker_size, rotations = rotations, color = :black)
         #figure, ax, colourbarthing = Makie.scatter(b_positions,axis = (;title = "Model state at step $(model.n)",  limits = (fig_box[1][1], fig_box[2][1], fig_box[1][2], fig_box[2][2]), aspect = 1, xticklabelsize = 30, yticklabelsize=30), marker = :circle,  rotations = rotations, color = :blue)
 	figure, ax, colourbarthing = Makie.scatter(b_positions,axis = (;  limits = (fig_box[1][1], fig_box[2][1], fig_box[1][2], fig_box[2][2]), aspect = 1, xticklabelsize = 30, yticklabelsize=30), marker = :circle,  rotations = rotations, color = :black, markersize =marker_size)	
-
+	#=
 	for i in 1:nagents(model)
                 text!(model[i].pos .-(0.0, 15.0), text = "$i", align = (:center, :top), fontsize = 40)
  	end
-
+	=#
 	#Colorbar(figure[1,2], colourbarthing)
         #save("./Cell_Images/shannon_flock_n_=_$(model.n).png", figure)
         #display(figure)
@@ -220,7 +220,7 @@ function draw_tesselation(positions, model)
 
 end
 
-function show_move(model::UnremovableABM{ContinuousSpace{2, true, Float64, typeof(Agents.no_vel_update)}, bird, typeof(Agents.Schedulers.fastest), Dict{Symbol, Real}, MersenneTwister}, id::Int64; view_box = ((0.0, 0.0), (rect_bound, rect_bound)), marker_size =10)
+function show_move(model::UnremovableABM{ContinuousSpace{2, true, Float64, typeof(Agents.no_vel_update)}, bird, typeof(Agents.Schedulers.fastest), Dict{Symbol, Real}, MersenneTwister}, id::Int64; view_box = ((0.0, 0.0), (rect_bound, rect_bound)), marker_size =10, draw_best_cell_arg = 1)
 	##First, show the position that the agent with id of id will go to 
 	kn::Vector{Float64} = [0.0, 0.0, 0.0, 0.0]
 	q::Int64 = 8
@@ -250,21 +250,29 @@ function show_move(model::UnremovableABM{ContinuousSpace{2, true, Float64, typeo
 	#Makie.scatter!(pot_pos, markersize = marker_size/2, color = :cyan)
 	Makie.scatter!(pot_pos, markersize = marker_size, color = :cyan)
 	#Makie.scatter!(pot_pos, markersize = marker_size, color = :blue)
-	circled_cell = give_cell_circled(best_voronoi_cell, pot_pos)
-	draw_agent_cell_bounded!(circled_cell)
+	
+	if(draw_best_cell_arg == 1)
+		circled_cell = give_cell_circled(best_voronoi_cell, pot_pos)
+		draw_agent_cell_bounded!(circled_cell)
+	end
 	return figure, ax
 end
 
-function show_move!(model::UnremovableABM{ContinuousSpace{2, true, Float64, typeof(Agents.no_vel_update)}, bird, typeof(Agents.Schedulers.fastest), Dict{Symbol, Real}, MersenneTwister}, id::Int64; view_box = ((0.0, 0.0), (rect_bound, rect_bound)), marker_size =10)
-        ##First, show the position that the agent with id of id will go to
+function show_move!(model::UnremovableABM{ContinuousSpace{2, true, Float64, typeof(Agents.no_vel_update)}, bird, typeof(Agents.Schedulers.fastest), Dict{Symbol, Real}, MersenneTwister}, id::Int64; view_box = ((0.0, 0.0), (rect_bound, rect_bound)), marker_size =10, m_arg = 100, m_spacing_arg = 1, qp_arg = 1, draw_best_cell_arg = 1, conflict_dist_arg = 2.0, colorrange_arg = (0, 1), show_calcs = 0)
+        #First, show the position that the agent with id of id will go to
         kn::Vector{Float64} = [0.0, 0.0, 0.0, 0.0]
         q::Int64 = 8
-        m::Int64 = 100
-        move_tuple = move_gradient_alt(model[id], model, kn, q, m, rho, model.target_area)
+        m::Int64 = m_arg
+        move_tuple = move_gradient_alt(model[id], model, kn, q, m, rho, model.target_area, m_spacing = m_spacing_arg, qp = qp_arg, conflict_dist_arg = conflict_dist_arg)
         pot_pos::Tuple{Float64, Float64} = move_tuple[1]
         sampled_positions = move_tuple[3]
         sampled_colours = move_tuple[4]
-        best_area = move_tuple[2]
+        if(show_calcs == 1)
+			for colour in sampled_colours
+				print("$colour\n")
+			end
+		end
+		best_area = move_tuple[2]
         best_voronoi_cell = move_tuple[6]
         ##Next, evaluate and draw the voronoi tesselation of the model given that move of the agent
         positions::Vector{Tuple{Float64, Float64}} = []
@@ -278,11 +286,13 @@ function show_move!(model::UnremovableABM{ContinuousSpace{2, true, Float64, type
 
         print("Agent $id wanted to move to a new position of $pot_pos with area of $best_area from its old position of $(model[id].pos) which had an area of $(model[id].A)\n")
         Makie.scatter!([model[i].pos for i in 1:nagents(model)], marker=:circle, color = :black, markersize = marker_size)
-	Makie.scatter!(sampled_positions, marker = :utriangle, color = sampled_colours, markersize = marker_size) #The agents sampled positions
+	Makie.scatter!(sampled_positions, marker = :utriangle, color = sampled_colours, markersize = marker_size, colormap = :cool, colorrange = colorrange_arg) #The agents sampled positions
         #Makie.scatter!(model[id].pos, color = :blue, marker = :circle, markersize = marker_size, rotations = atan(model[id].vel[2], model[id].vel[1])) #The agent of interest's current position
         Makie.scatter!(pot_pos, markersize = marker_size/2, color = :cyan)
-        circled_cell = give_cell_circled(best_voronoi_cell, pot_pos)
-        draw_agent_cell_bounded!(circled_cell)
+        if(draw_best_cell_arg == 1)
+			circled_cell = give_cell_circled(best_voronoi_cell, pot_pos)
+			draw_agent_cell_bounded!(circled_cell)
+		end
         #display(figure)
 end
 

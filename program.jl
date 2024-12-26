@@ -1,17 +1,19 @@
 const no_simulations::Int64 = 20
-const no_steps::Int64 = 100
+const no_steps::Int64 = 5000
 
 
 include("prog.h")
 
-adata = [happiness]
+adata = [(normalised_true_area, StatsBase.mean)]
 mdata = [mean_speed, rot_o_alt, rot_o, polarisation]
 
-target_dods = [22000.0]
+target_dods = [1000.0*sqrt(12)]
+qp_args = [1]
 
 parameters = Dict(
         :simulation_number_arg => [i for i::Int64 in 1:no_simulations],
         :target_area_arg => target_dods,
+		:qp_arg => qp_args,
         #:left_bias_arg => left_biases
 ) 
 

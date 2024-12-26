@@ -45,11 +45,11 @@ print("Agent template created\n")
 
 ###Create the initialisation function
 using Random #for reproducibility
-function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1, no_bird = 100, seed = 123, tracked_agent_arg = tracked_agent, no_moves_arg = no_birds, left_bias_arg = 0.5)
+function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1, no_bird = 100, seed = 123, tracked_agent_arg = tracked_agent, no_moves_arg = no_birds, left_bias_arg = 0.5, q_arg = 8, qp_arg = 1)
 	#Create the space
 	space = ContinuousSpace((rect_bound, rect_bound); periodic = true)
 	#Create the properties of the model
-	properties = Dict(:t => 0.0, :dt => 1.0, :n => 0, :CHA => 0.0, :target_area => target_area_arg, :simulation_number => simulation_number_arg, :tracked_agent => tracked_agent_arg, :no_moves => no_moves_arg, :left_bias => left_bias_arg)
+	properties = Dict(:t => 0.0, :dt => 1.0, :n => 0, :CHA => 0.0, :target_area => target_area_arg, :simulation_number => simulation_number_arg, :tracked_agent => tracked_agent_arg, :no_moves => no_moves_arg, :left_bias => left_bias_arg, :qp => qp_arg, :q => q_arg)
 	
 	#Create the rng
 	rng = Random.MersenneTwister(Int64(seed))
@@ -115,27 +115,20 @@ function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1
 		for i in 1:length(neighbouring_positions)
 			print("$(neighbouring_positions[i])\n")
 		end =#		
-	
-		vix::Float64 = initial_vels[i][1]
-		viy::Float64 = initial_vels[i][2]
-		relic_x::Float64 = -1.0*(-viy)
-        	relic_y::Float64 = -vix
-        	relic_pq::Tuple{Float64, Float64} = (relic_x, relic_y)
-        	relic_angle::Float64 = atan(relic_y, relic_x)
-        	relic_is_box::Int64 = -1
-        	relic_half_plane::Tuple{Float64, Tuple{Float64, Float64}, Tuple{Float64, Float64}, Int64} = (relic_angle, relic_pq, ri, relic_is_box)
+		
+		relic_half_plane = generate_relic(initial_positions[i], initial_vels[i])
 
 		initial_cell::Vector{Tuple{Tuple{Float64, Float64}, Int64, Int64}} = @time voronoi_cell_bounded(model, ri, neighbouring_positions, rho, eps, inf, temp_hp, initial_vels[i], [relic_half_plane])
 		initial_A::Float64 = voronoi_area(model, ri, initial_cell, rho) 
-		detect_write_periphery(initial_A, initial_cell, model.n) 	
+		#detect_write_periphery(initial_A, initial_cell, model.n) 	
 
 		true_initial_cell::Vector{Tuple{Tuple{Float64, Float64}, Int64, Int64}} = @time voronoi_cell(model, ri, neighbouring_positions, rho,eps, inf, temp_hp, initial_vels[i])
                 true_initial_A::Float64 = voronoi_area(model, ri, true_initial_cell, rho)
-		num_neighbours[i] = no_neighbours(true_initial_cell)		
-		
+		num_neighbours[i] = no_neighbours(true_initial_cell)				
 		if(num_neighbours[i] > 20)
 			print("$(true_initial_cell)\n")
 		end
+		print("Bounded cell area was $initial_A, true area was $true_initial_A\n")
 		
 		init_sides_squared[i] = cell_sides_squared(true_initial_cell)	
 		#regularities[i] = regularity_metric(true_initial_cell, true_initial_A)	
@@ -182,8 +175,9 @@ function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1
 	#Now make the agents with their respective DoDs and add to the model
 	total_area::Float64 = 0.0
 	total_speed::Float64 = 0.0
+	init_best_q = 0
 	for i::Int32 in 1:no_birds
-		agent = bird(i, initial_positions[i], initial_vels[i], 1.0, initial_dods[i], true_initial_dods[i], target_area_arg,  num_neighbours[i], init_sides_squared[i], 0.0, 0.0, rand([0]), 0.0, 0.0, 0.0)
+		agent = bird(i, initial_positions[i], initial_vels[i], 1.0, initial_dods[i], true_initial_dods[i], target_area_arg,  num_neighbours[i], init_sides_squared[i], 0.0, 0.0, rand([0]), 0.0, 0.0, init_best_q)
 		agent.vel = agent.vel ./ norm(agent.vel)
 		print("The area for agent $i was $(agent.A)\n")
 		#print("Initial velocity of $(agent.vel) \n")
@@ -200,13 +194,13 @@ function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1
 	init_rot_ord::Float64 = rot_ord(allagents(model))
 	init_rot_ord_alt::Float64 = rot_ord_alt(allagents(model))
 	#print("Packing fraction at n = 0 is $(packing_fraction)\n")
-	write(compac_frac_file, "$packing_fraction ")
+	#write(compac_frac_file, "$packing_fraction ")
 	average_area::Float64 = total_area / nagents(model)
-        write(mean_a_file, "$average_area ")
+        #write(mean_a_file, "$average_area ")
 	average_speed::Float64 = total_speed/no_birds
-	write(mean_speed_file, "$average_speed ")
-	write(rot_o_file, "$init_rot_ord ")
-	write(rot_o_alt_file, "$init_rot_ord_alt ")
+	#write(mean_speed_file, "$average_speed ")
+	#write(rot_o_file, "$init_rot_ord ")
+	#write(rot_o_alt_file, "$init_rot_ord_alt ")
 	print("Initialisation complete. \n\n\n")
 	global initialised = 1
 	
@@ -241,7 +235,7 @@ savefig("voronoi_pack_init_tess.png")
 		push!(positions, model[i].pos)
 		push!(velocities, model[i].vel)
 	end
-	write_pos_vel(positions, velocities, pos_vels_file, 0)
+	#write_pos_vel(positions, velocities, pos_vels_file, 0)
 	#write_agent_vals(model)	
 
 	return model
@@ -263,7 +257,7 @@ function agent_step!(agent, model)
 	if(agent.collaborator == 1)
 		move_made_main = move_gradient_collab(agent, model, k1, rho, eta)
 	else
-		move_made_main_tuple =  move_gradient(agent, model, k1, 8, 100, rho, target_area, qp = 2)
+		move_made_main_tuple =  move_gradient(agent, model, k1, model.q, 100, rho, target_area, qp = model.qp)
 		move_made_main = move_made_main_tuple
 	end
 	no_move[Int64(agent.id)] = move_made_main
@@ -353,7 +347,8 @@ function model_step!(model)
 
 		#translate_periodic_quick(neighbour_positions) #Introduce period boundary conditions for Vicsek
 
-                ri::Tuple{Float64, Float64} = agent_i.pos
+        ri::Tuple{Float64, Float64} = agent_i.pos
+		#=
 		vix::Float64 = agent_i.vel[1]
 		viy::Float64 = agent_i.vel[2]
 		relic_x::Float64 = -1.0*(-viy)
@@ -362,7 +357,9 @@ function model_step!(model)
         	relic_angle::Float64 = atan(relic_y, relic_x)
         	relic_is_box::Int64 = -2
         	relic_half_plane::Tuple{Float64, Tuple{Float64, Float64}, Tuple{Float64, Float64}, Int64} = (relic_angle, relic_pq, agent_i.pos, relic_is_box)
-		
+		=#
+		relic_half_plane = generate_relic(agent_i.pos, agent_i.vel)
+
 		#print("The time for calculating a cell was\n")
                 new_cell_i::Vector{Tuple{Tuple{Float64, Float64}, Int64, Int64}} = voronoi_cell_bounded(model, ri, neighbour_positions, rho, eps, inf, temp_hp, agent_i.vel, [relic_half_plane])
                 new_area::Float64 = voronoi_area(model, ri, new_cell_i, rho)
@@ -428,6 +425,7 @@ function model_step!(model)
 	end
 	packing_fraction = nagents(model)*pi/model.CHA
 	#print("Packing fraction at n = $(model.n) is $(packing_fraction)\n")
+	#=
 	if(model.n < no_steps)
 		write(compac_frac_file, "$packing_fraction ")
 		write(rot_o_file, "$rot_order ")
@@ -437,8 +435,10 @@ function model_step!(model)
 		write(rot_o_file, "$rot_order\n")
 		write(rot_o_alt_file, "$rot_order_alt\n")
 	end
+	=#
 	average_area = total_area / nagents(model)
 	average_speed = total_speed/nagents(model)
+	#=
 	if(model.n < no_steps)
 		write(mean_a_file, "$average_area ")
 		write(mean_speed_file, "$average_speed ")
@@ -446,7 +446,7 @@ function model_step!(model)
 		write(mean_a_file, "$average_area\n")
 		write(mean_speed_file, "$average_speed\n")
 	end
-	
+	=#
 	#=
 	last_hp_vert = open("Last_hp_vert.txt", "w")
 	for i in 1:nagents(model)
@@ -458,7 +458,7 @@ function model_step!(model)
 	close(last_hp_vert) 
 	=#
 	
-	write_pos_vel(positions, velocities, pos_vels_file, model.n)
+	#write_pos_vel(positions, velocities, pos_vels_file, model.n)
 	#write_agent_vals(model)
 	
 	print("Finished step $(model.n) for simulation $(model.simulation_number) with a target DOD of $(model.target_area).\n\n\n")
