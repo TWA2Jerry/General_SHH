@@ -19,7 +19,7 @@ VoronoiCells
 Profile
 Random 
 
-Model parameters such as 
+The main file for running in the simulations is "program.jl". Model parameters FOV, tdod, q, qp and m as well as other simulation details such as markers can be adjusted in "program.jl". You can run a simulation using the parameters by entering Julia, and typing: "include("program.jl")". 
 
 Images from a simulation are generated in the folder "Simulation_Images". 
 
