@@ -1,5 +1,6 @@
 .DS_Store
 Records/h43/h43_mdf_file.txt
+Records/*
 Records/**/*_mdf_file.txt
 #pos_vels.txt
 Cell_Images/*
