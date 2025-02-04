@@ -57,9 +57,11 @@ function initialise(; target_area_arg = 1000*sqrt(12), simulation_number_arg = 1
 	print("Before model\n")
 
 	#Create the model
-	model = UnremovableABM(
-		bird, space; 
-		properties, rng, scheduler = Schedulers.fastest
+	model = StandardABM(
+		bird, space; rng,
+		agent_step! = agent_step!,
+		model_step! = model_step!, 
+		properties,  scheduler = Schedulers.fastest
 	)	
 
 

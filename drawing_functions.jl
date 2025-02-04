@@ -28,7 +28,7 @@ function draw_figures(model, actual_areas::Vector{Float64}, previous_areas::Vect
         figure, ax, colourbarthing = Makie.scatter([model[i].pos for i in 1:nagents(model)], 
 			axis = (;  limits = (0, rect_bound, 0, rect_bound), aspect = 1, title="Step $(model.n), FOV = $(model.fov) degrees, tdod = $(model.target_area)BL^2, q = $(model.q), qp = $(model.qp), m = $(model.m)"), 
 			marker = simulation_marker,  markersize = simulation_markersize, 
-			rotations = rotations, color = :black)
+			rotation = rotations, color = :black)
 	hidedecorations!(ax)
 
 	#=

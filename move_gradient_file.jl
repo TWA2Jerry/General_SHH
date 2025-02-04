@@ -184,8 +184,8 @@ function move_gradient(agent::bird, model,  kn::Vector{Float64}, q::Int64, m::In
 	end
 	
 	#Create the noise addition
-	epsilon::Vector{Float64} = randn(model.rng, Float64, 2)
-	epsilon_prime::Vector{Float64} = randn(model.rng, Float64, 2)
+	epsilon::Vector{Float64} = randn(abmrng(model), Float64, 2)
+	epsilon_prime::Vector{Float64} = randn(abmrng(model), Float64, 2)
 	dW::Vector{Float64} = sqrt(model.dt) .* (epsilon .- epsilon_prime)
 
 	if(move_made==1)

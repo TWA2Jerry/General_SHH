@@ -1,4 +1,4 @@
-const no_simulations::Int64 = 20
+const no_simulations::Int64 = 1
 const no_steps::Int64 = 5000
 
 
@@ -7,7 +7,7 @@ include("prog.h")
 adata = [(normalised_true_area, StatsBase.mean)]
 mdata = [mean_speed, rot_o_alt, rot_o, polarisation]
 
-target_dods = [.1*sqrt(12)]
+target_dods = [1000*sqrt(12)]
 q_args = [8]
 qp_args = [1]
 m_args = [100]
@@ -33,7 +33,7 @@ simulation_markersize = 10
 #adf, mdf = @time run!(model, agent_step!, model_step!, no_steps; adata, mdata)
 
 ###New thingo for running, just because there's never reason you wouldn't use this general method of running possibly multiple params
-adf, mdf  = paramscan(parameters, initialise; adata, mdata, agent_step!, model_step!, n = no_steps)
+adf, mdf  = paramscan(parameters, initialise; adata, mdata, n = no_steps)
 
 #do_io_stuff(compac_frac_file, mean_a_file, rot_o_file, rot_o_alt_file, mean_speed_file)
 #do_more_io_stuff(adf, mdf)
