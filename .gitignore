@@ -4,7 +4,7 @@ Records/*
 Records/**/*_mdf_file.txt
 #pos_vels.txt
 Cell_Images/*
-Simulation_Images/*
+Simulation_Images/*.png
 *.txt
 !/pos_vels.txt
 Dod/*
