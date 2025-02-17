@@ -7,7 +7,6 @@ CairoMakie
 ColorSchemes
 Colors
 DataFrames
-GLMakie
 GeometryBasics
 Images
 InteractiveDynamics
