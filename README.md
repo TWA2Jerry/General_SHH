@@ -24,6 +24,8 @@ Images from a simulation are generated in the folder "Simulation_Images".
 
 Global parameters, such as domain size, are set in "global_vars.jl". Specifically in this file, the number of agents in the model is set as variable no_birds. The size of the domain is set as the variable rect_bound.  
 
+Code for calculating the bounded DOD or Voronoi cells is contained in "half_plane_bounded.jl". Unfortunately, this will most likely be hard to follow, and it is recommended that the user implements the code themselves based off the illustration in our paper/thesis.
+
 Unfortunately, I will be unable to regularly maintain the repository, so it is possible that updates to some of the packages may make current syntax invalid. However, the code should work for the following versions of each package:
 Agents v6.2.4
 CSV v0.10.15
